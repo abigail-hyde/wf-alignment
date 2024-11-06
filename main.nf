@@ -18,10 +18,6 @@ MINIMAP_ARGS_PRESETS = [
 process makeMMIndex {
     label "wfalignment"
     cpus params.threads
-    memory {
-        def ref_size = combined_refs.size()
-        combined_refs.size() > 1e9 ? "31 GB" : "11 GB"
-    }
     input:
         path combined_refs, stageAs: "combined_references.fasta"
         val minimap_args
@@ -37,10 +33,6 @@ process makeMMIndex {
 process checkReferences {
     label "wfalignment"
     cpus params.threads
-    memory {
-        def ref_size = combined_refs.size()
-        combined_refs.size() > 1e9 ? "31 GB" : "11 GB"
-    }
     input:
         path "combined_references.mmi"
         path "combined_refs.fasta.fai"
@@ -57,9 +49,6 @@ process checkReferences {
 process alignReads {
     label "wfalignment"
     cpus params.threads
-    memory {
-        combined_refs.size() > 1e9 ? "31 GB" : "11 GB"
-    }
     input:
         tuple val(meta), path(input)
         path combined_refs
@@ -88,7 +77,6 @@ process addStepsColumn {
     // determining window length / number for such cases
     label "wfalignment"
     cpus 1
-    memory "2 GB"
     input: path "lengths.tsv"
     output: path "lengths_with_steps.tsv"
     """
@@ -107,8 +95,7 @@ process addStepsColumn {
 process readDepthPerRef {
     // TODO: check if parallelisation with `xargs` or `parallel` is more efficient
     label "wfalignment"
-    cpus 3
-    memory "7 GB"
+    cpus 4
     input:
         tuple val(meta), path(alignment), path(index)
         path ref_len
@@ -138,8 +125,7 @@ process readDepthPerRef {
 
 process makeReport {
     label "wf_common"
-    cpus 1
-    memory {11.GB * task.attempt}
+    cpus {1 * task.attempt}
     maxRetries 1
     errorStrategy = 'retry'
     input:
@@ -166,7 +152,6 @@ process makeReport {
 process getVersions {
     label "wfalignment"
     cpus 1
-    memory "2 GB"
     output:
         path "versions.txt"
     script:
@@ -186,7 +171,6 @@ process getVersions {
 process getParams {
     label "wfalignment"
     cpus 1
-    memory "2 GB"
     output:
         path "params.json"
     script:
@@ -201,7 +185,6 @@ process getParams {
 process collectFilesInDir {
     label "wfalignment"
     cpus 1
-    memory "2 GB"
     input: tuple val(dirname), path("staging_dir/*")
     output: path(dirname)
     script:
@@ -392,7 +375,6 @@ workflow pipeline {
 process output {
     label "wfalignment"
     cpus 1
-    memory "2 GB"
     // publish inputs to output directory
     publishDir "${params.out_dir}", mode: 'copy', pattern: "*", saveAs: {
         // publish with `fname` as filename (unless it's `null`; then just use the
